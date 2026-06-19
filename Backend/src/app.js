@@ -20,6 +20,9 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
+app.get('/', (req, res) => {
+    res.status(200).json({ message: 'API is running successfully' });
+});
 app.use('/tasks', taskRoutes);
 
 // Unknown route handler
