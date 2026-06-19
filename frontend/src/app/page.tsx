@@ -2,10 +2,11 @@
 
 import React, { useEffect, useState } from 'react';
 import {
-  Container, Typography, Button, IconButton, Box, 
-  CircularProgress, LinearProgress, Paper
+  Container, Typography, Button, IconButton, Box,
+  CircularProgress, Paper,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, Menu, MenuItem
 } from '@mui/material';
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, CheckCircle, RadioButtonUnchecked } from '@mui/icons-material';
+import { Add as AddIcon, MoreVert as MoreVertIcon } from '@mui/icons-material';
 import { fetchTasks, createTask, updateTask, deleteTask, Task } from '../services/api';
 import TaskModal from '../components/TaskModal';
 import TaskSnackbar from '../components/TaskSnackbar';
@@ -13,13 +14,16 @@ import TaskSnackbar from '../components/TaskSnackbar';
 export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
   const [snackbar, setSnackbar] = useState({
     open: false, message: '', severity: 'success' as 'success' | 'error'
   });
+
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [menuTaskId, setMenuTaskId] = useState<string | null>(null);
 
   const loadTasks = async () => {
     try {
@@ -40,7 +44,51 @@ export default function Home() {
   };
 
   const handleOpenAdd = () => { setEditingTask(null); setModalOpen(true); };
-  const handleOpenEdit = (task: Task) => { setEditingTask(task); setModalOpen(true); };
+  
+  const handleMenuClick = (event: React.MouseEvent<HTMLButtonElement>, taskId: string) => {
+    setAnchorEl(event.currentTarget);
+    setMenuTaskId(taskId);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setMenuTaskId(null);
+  };
+
+  const handleEditFromMenu = () => {
+    const task = tasks.find(t => t.id === menuTaskId);
+    if (task) {
+      setEditingTask(task);
+      setModalOpen(true);
+    }
+    handleMenuClose();
+  };
+
+  const handleDeleteFromMenu = async () => {
+    if (menuTaskId && confirm('Are you sure you want to delete this task?')) {
+      try {
+        await deleteTask(menuTaskId);
+        showSnackbar('Task deleted successfully');
+        loadTasks();
+      } catch (error) {
+        showSnackbar('Failed to delete task', 'error');
+      }
+    }
+    handleMenuClose();
+  };
+
+  const handleToggleStatusFromMenu = async () => {
+    const task = tasks.find(t => t.id === menuTaskId);
+    if (task) {
+      try {
+        await updateTask(task.id, { completed: !task.completed });
+        loadTasks();
+      } catch (error) {
+        showSnackbar('Failed to update status', 'error');
+      }
+    }
+    handleMenuClose();
+  };
 
   const handleSaveTask = async (taskData: Omit<Task, 'id'>) => {
     try {
@@ -58,132 +106,110 @@ export default function Home() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this task?')) {
-      try {
-        await deleteTask(id);
-        showSnackbar('Task deleted successfully');
-        loadTasks();
-      } catch (error) {
-        showSnackbar('Failed to delete task', 'error');
-      }
+  const getStatusChipProps = (completed: boolean) => {
+    if (completed) {
+      return {
+        label: 'COMPLETED',
+        sx: { backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', fontWeight: 600, borderRadius: '4px' }
+      };
     }
+    return {
+      label: 'PENDING',
+      sx: { backgroundColor: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', fontWeight: 600, borderRadius: '4px' }
+    };
   };
-
-  const handleToggleStatus = async (task: Task) => {
-    try {
-      await updateTask(task.id, { completed: !task.completed });
-      loadTasks();
-    } catch (error) {
-      showSnackbar('Failed to update status', 'error');
-    }
-  };
-
-  const completedCount = tasks.filter(t => t.completed).length;
-  const progressPercentage = tasks.length === 0 ? 0 : Math.round((completedCount / tasks.length) * 100);
 
   return (
-    <Container maxWidth="sm" sx={{ py: 6, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+    <Container maxWidth="xl" sx={{ py: 6 }}>
       {/* Header Area */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 4, width: '100%' }}>
-        <Typography variant="h3" component="h1" sx={{ fontWeight: 800, color: '#1a73e8', textAlign: 'center', mb: 1 }}>
-          Tasks
-        </Typography>
-        <Typography variant="subtitle1" color="textSecondary" sx={{ mb: 3, textAlign: 'center' }}>
-          Manage your daily goals simply.
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+        <Typography variant="h5" component="h1" sx={{ fontWeight: 600, color: '#333' }}>
+          Tasks Data
         </Typography>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
           onClick={handleOpenAdd}
-          fullWidth
-          size="large"
           sx={{ 
-            borderRadius: '0.75rem', py: 1.5,
             backgroundColor: '#1a73e8',
             boxShadow: 'none',
-            textTransform: 'none', fontWeight: 'bold', fontSize: '1rem',
+            textTransform: 'none', 
+            fontWeight: 500,
             '&:hover': { backgroundColor: '#1557b0', boxShadow: 'none' },
-            transition: 'background-color 0.2s'
           }}
         >
-          Add New Task
+          Add Task
         </Button>
       </Box>
 
-      {/* Progress Bar Area */}
-      <Box sx={{ mb: 5, background: '#ffffff', p: 3, borderRadius: '1rem', border: '1px solid #e0e0e0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-          <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#1a73e8' }}>Overall Progress</Typography>
-          <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#1a73e8' }}>{progressPercentage}%</Typography>
-        </Box>
-        <LinearProgress 
-          variant="determinate" 
-          value={progressPercentage} 
-          sx={{ 
-            height: 10, borderRadius: 5, backgroundColor: '#f1f3f4',
-            '& .MuiLinearProgress-bar': { backgroundColor: '#1a73e8', borderRadius: 5 }
-          }} 
-        />
-      </Box>
-
-      {/* Main List Area */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 8, background: '#ffffff', borderRadius: '1rem', border: '1px solid #e0e0e0' }}>
-            <CircularProgress sx={{ color: '#1a73e8' }} />
-          </Box>
-        ) : tasks.length === 0 ? (
-          <Box sx={{ textAlign: 'center', p: 8, background: '#ffffff', borderRadius: '1rem', border: '1px solid #e0e0e0' }}>
-            <Typography variant="h5" sx={{ color: 'rgba(0,0,0,0.6)', mb: 2 }}>You have no tasks pending.</Typography>
-            <Typography variant="body1" sx={{ color: 'rgba(0,0,0,0.4)' }}>Click 'New Task' to get started!</Typography>
-          </Box>
-        ) : (
-          tasks.map((task) => (
-            <Paper 
-              key={task.id} 
-              elevation={0} 
-              sx={{ 
-                p: 2.5, 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'space-between',
-                borderRadius: '1rem',
-                border: '1px solid #e0e0e0',
-                transition: 'box-shadow 0.2s',
-                '&:hover': { boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
-                <IconButton onClick={() => handleToggleStatus(task)} sx={{ color: task.completed ? '#10b981' : 'rgba(0,0,0,0.2)' }}>
-                  {task.completed ? <CheckCircle /> : <RadioButtonUnchecked />}
-                </IconButton>
-                <Box>
-                  <Typography variant="subtitle1" sx={{ fontWeight: task.completed ? 400 : 600, color: task.completed ? '#64748b' : '#0f172a', textDecoration: task.completed ? 'line-through' : 'none' }}>
+      {/* Main Table Area */}
+      <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid #e0e0e0', borderRadius: '8px' }}>
+        <Table sx={{ minWidth: 650 }} aria-label="tasks table">
+          <TableHead>
+            <TableRow sx={{ backgroundColor: '#f9f9f9' }}>
+              <TableCell sx={{ color: '#888', fontWeight: 600, fontSize: '0.75rem', letterSpacing: '0.5px' }}>TITLE</TableCell>
+              <TableCell sx={{ color: '#888', fontWeight: 600, fontSize: '0.75rem', letterSpacing: '0.5px' }}>DESCRIPTION</TableCell>
+              <TableCell sx={{ color: '#888', fontWeight: 600, fontSize: '0.75rem', letterSpacing: '0.5px' }}>PRIORITY</TableCell>
+              <TableCell sx={{ color: '#888', fontWeight: 600, fontSize: '0.75rem', letterSpacing: '0.5px' }}>STATUS</TableCell>
+              <TableCell align="right" sx={{ color: '#888', fontWeight: 600, fontSize: '0.75rem', letterSpacing: '0.5px' }}>ACTIONS</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={5} align="center" sx={{ py: 8 }}>
+                  <CircularProgress sx={{ color: '#1a73e8' }} />
+                </TableCell>
+              </TableRow>
+            ) : tasks.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} align="center" sx={{ py: 8, color: '#666' }}>
+                  No tasks found.
+                </TableCell>
+              </TableRow>
+            ) : (
+              tasks.map((task) => (
+                <TableRow
+                  key={task.id}
+                  sx={{ '&:last-child td, &:last-child th': { border: 0 }, '&:hover': { backgroundColor: '#fafafa' } }}
+                >
+                  <TableCell component="th" scope="row" sx={{ fontWeight: 500, color: '#333' }}>
                     {task.title}
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: 'rgba(0,0,0,0.5)', maxWidth: { xs: 200, sm: 400, md: 600 }, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {task.description || 'No description'}
-                  </Typography>
-                </Box>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <span className={`priority-badge priority-${task.priority.toLowerCase()}`}>
-                  {task.priority}
-                </span>
-                <Box>
-                  <IconButton onClick={() => handleOpenEdit(task)} sx={{ color: '#1a73e8', '&:hover': { background: 'rgba(26, 115, 232, 0.1)' } }}>
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton onClick={() => handleDelete(task.id)} sx={{ color: '#ef4444', '&:hover': { background: 'rgba(239, 68, 68, 0.1)' } }}>
-                    <DeleteIcon />
-                  </IconButton>
-                </Box>
-              </Box>
-            </Paper>
-          ))
-        )}
-      </Box>
+                  </TableCell>
+                  <TableCell sx={{ color: '#555', maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {task.description || '-'}
+                  </TableCell>
+                  <TableCell sx={{ color: '#333' }}>
+                    {task.priority}
+                  </TableCell>
+                  <TableCell>
+                    <Chip size="small" {...getStatusChipProps(task.completed)} />
+                  </TableCell>
+                  <TableCell align="right">
+                    <IconButton size="small" onClick={(e) => handleMenuClick(e, task.id)}>
+                      <MoreVertIcon fontSize="small" />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      {/* Row Action Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+        elevation={2}
+      >
+        <MenuItem onClick={handleToggleStatusFromMenu} sx={{ fontSize: '0.875rem' }}>Toggle Status</MenuItem>
+        <MenuItem onClick={handleEditFromMenu} sx={{ fontSize: '0.875rem' }}>Edit Task</MenuItem>
+        <MenuItem onClick={handleDeleteFromMenu} sx={{ fontSize: '0.875rem', color: '#ef4444' }}>Delete Task</MenuItem>
+      </Menu>
 
       <TaskModal open={modalOpen} onClose={() => setModalOpen(false)} onSave={handleSaveTask} taskToEdit={editingTask} />
       <TaskSnackbar open={snackbar.open} message={snackbar.message} severity={snackbar.severity} onClose={() => setSnackbar(prev => ({ ...prev, open: false }))} />
