@@ -83,32 +83,31 @@ export default function Home() {
   const progressPercentage = tasks.length === 0 ? 0 : Math.round((completedCount / tasks.length) * 100);
 
   return (
-    <Container maxWidth="lg" sx={{ py: 6 }}>
+    <Container maxWidth="sm" sx={{ py: 6, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       {/* Header Area */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, flexWrap: 'wrap', gap: 2 }}>
-        <Box>
-          <Typography variant="h3" component="h1" sx={{ fontWeight: 800, color: '#1a73e8' }}>
-            My Tasks
-          </Typography>
-          <Typography variant="subtitle1" color="textSecondary" sx={{ mt: 1 }}>
-            Manage your daily goals simply.
-          </Typography>
-        </Box>
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 4, width: '100%' }}>
+        <Typography variant="h3" component="h1" sx={{ fontWeight: 800, color: '#1a73e8', textAlign: 'center', mb: 1 }}>
+          Tasks
+        </Typography>
+        <Typography variant="subtitle1" color="textSecondary" sx={{ mb: 3, textAlign: 'center' }}>
+          Manage your daily goals simply.
+        </Typography>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
           onClick={handleOpenAdd}
+          fullWidth
           size="large"
           sx={{ 
-            borderRadius: '2rem', px: 4, py: 1.5,
+            borderRadius: '0.75rem', py: 1.5,
             backgroundColor: '#1a73e8',
-            boxShadow: '0 4px 10px rgba(26, 115, 232, 0.3)',
+            boxShadow: 'none',
             textTransform: 'none', fontWeight: 'bold', fontSize: '1rem',
-            '&:hover': { backgroundColor: '#1557b0', transform: 'scale(1.02)' },
-            transition: 'all 0.3s'
+            '&:hover': { backgroundColor: '#1557b0', boxShadow: 'none' },
+            transition: 'background-color 0.2s'
           }}
         >
-          New Task
+          Add New Task
         </Button>
       </Box>
 

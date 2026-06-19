@@ -13,22 +13,19 @@ export default function Navbar() {
       borderBottom: '1px solid rgba(0, 0, 0, 0.05)'
     }}>
       <Container maxWidth="lg">
-        <Toolbar disableGutters sx={{ minHeight: '70px' }}>
-          <AssignmentTurnedInIcon sx={{ color: '#4f46e5', mr: 2, fontSize: 32 }} />
+        <Toolbar disableGutters sx={{ minHeight: '60px', display: 'flex', justifyContent: 'center' }}>
+          <AssignmentTurnedInIcon sx={{ color: '#1a73e8', mr: 1, fontSize: 28 }} />
           <Typography
-            variant="h5"
+            variant="h6"
             noWrap
             component="div"
             sx={{
-              mr: 2,
-              fontWeight: 800,
-              letterSpacing: '-0.5px',
+              fontWeight: 700,
               color: '#1a73e8',
             }}
           >
-            TaskFlow Pro
+            Tasks
           </Typography>
-          <Box sx={{ flexGrow: 1 }} />
         </Toolbar>
       </Container>
     </AppBar>
